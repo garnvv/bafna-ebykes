@@ -8,7 +8,7 @@ router.route('/')
   .get(protect, admin, getAllServices);
 
 router.get('/myservices', protect, getMyServices);
-router.get('/:id/invoice', protect, getServiceInvoice);
+router.get('/:id/invoice', getServiceInvoice);
 router.put('/:id', protect, admin, updateServiceStatus);
 
 module.exports = router;

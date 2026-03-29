@@ -103,9 +103,9 @@ const updateBookingStatus = async (req, res) => {
       const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
       const msg = `Hello, ${fullBooking.User.name}\n\nYour test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED\n\nDate: ${fullBooking.bookingDate}\nTime: ${fullBooking.timeSlot}${branding}`;
 
-      await sendWhatsApp(fullBooking.User.phone, msg);
+      sendWhatsApp(fullBooking.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
       const htmlMsg = `<h1>Test Ride Approved</h1><p>Hello, ${fullBooking.User.name},</p><p>Your test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED.</p><p>Date: ${fullBooking.bookingDate}<br/>Time: ${fullBooking.timeSlot}</p><p>BAFNA E-BYKES</p>`;
-      await sendEmail(fullBooking.User.email, 'Test Ride Approved', msg, htmlMsg);
+      sendEmail(fullBooking.User.email, 'Test Ride Approved', msg, htmlMsg).catch(err => console.error('[Email Error]', err.message));
     }
 
     res.json(booking);
@@ -175,18 +175,18 @@ const updateServiceStatus = async (req, res) => {
 
         const msg = `Hello, ${fullService.User.name}\n\nYour service appointment is COMPLETED\n\nTotal Bill: Rs. ${Number(service.cost).toFixed(2)}\n\nDownload Your Invoice (PDF):\n${pdfUrl}\n\nThe invoice has also been sent to your email.${branding}`;
 
-        await sendWhatsApp(fullService.User.phone, msg);
+        sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
 
         // Email — attach PDF buffer directly
         const htmlMsg = `<h1>Service Invoice</h1><p>Hello, ${fullService.User.name},</p><p>Your service for <b>${fullService.Vehicle?.Bike?.modelName || 'your vehicle'}</b> is now complete.</p><p>Total Amount Payable: <b>&#8377;${Number(service.cost).toFixed(2)}</b></p><p>Please find your invoice attached to this email. You can also download it here: <a href="${pdfUrl}">Invoice_#SRV-${fullService.id}.pdf</a></p><p>BAFNA E-BYKES</p>`;
 
-        await sendEmail(
+        sendEmail(
           fullService.User.email,
           'Service Invoice - BAFNA E-BYKES',
           msg,
           htmlMsg,
           [{ filename: invoice.filename, content: invoice.buffer }]
-        );
+        ).catch(err => console.error('[Email Error]', err.message));
 
         console.log(`[Invoice] Saved: ${invoice.filePath}`);
         console.log(`[Invoice] Public URL: ${invoice.publicUrl}`);
@@ -204,9 +204,9 @@ const updateServiceStatus = async (req, res) => {
       const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
       const msg = `Hello, ${fullService.User.name}\n\nYour service appointment has been APPROVED\n\nDate: ${fullService.appointmentDate}\n\nPlease bring your vehicle to the showroom${branding}`;
 
-      await sendWhatsApp(fullService.User.phone, msg);
+      sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
       const htmlMsg = `<h1>Service Approved</h1><p>Hello, ${fullService.User.name},</p><p>Your service appointment has been APPROVED.</p><p>Date: ${fullService.appointmentDate}</p><p>Please bring your vehicle to the showroom.</p><p>BAFNA E-BYKES</p>`;
-      await sendEmail(fullService.User.email, 'Service Appointment Approved', msg, htmlMsg);
+      sendEmail(fullService.User.email, 'Service Appointment Approved', msg, htmlMsg).catch(err => console.error('[Email Error]', err.message));
     }
 
     res.json(service);

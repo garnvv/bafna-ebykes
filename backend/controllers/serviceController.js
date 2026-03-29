@@ -80,9 +80,9 @@ const updateServiceStatus = async (req, res) => {
         const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
         const msg = `Hello, ${fullService.User.name}\n\nYour service appointment has been APPROVED\n\nDate: ${fullService.appointmentDate}\n\nPlease bring your vehicle to the showroom${branding}`;
 
-        await sendWhatsApp(fullService.User.phone, msg);
+        sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
         const htmlMsg = `<h1>Service Approved</h1><p>Hello, ${fullService.User.name},</p><p>Your service appointment has been APPROVED.</p><p>Date: ${fullService.appointmentDate}</p><p>Please bring your vehicle to the showroom.</p><p>BAFNA E-BYKES</p>`;
-        await sendEmail(fullService.User.email, 'Service Appointment Approved', msg, htmlMsg);
+        sendEmail(fullService.User.email, 'Service Appointment Approved', msg, htmlMsg).catch(err => console.error('[Email Error]', err.message));
       }
 
       res.json(service);

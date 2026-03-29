@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { API_URL } from '../../services/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -30,13 +29,8 @@ const Login = () => {
   };
 
   return (
-    <div className="pt-32 pb-24 min-h-screen flex flex-col items-center justify-center px-4 bg-[url('/auth-scooter.png')] bg-cover bg-center">
+    <div className="pt-32 pb-24 min-h-screen flex items-center justify-center px-4 bg-[url('/auth-scooter.png')] bg-cover bg-center">
       <div className="absolute inset-0 bg-white/80 backdrop-blur-lg" />
-
-      {/* DEBUG INFO */}
-      <div className="relative mb-4 bg-black/80 text-white text-[10px] px-3 py-1 rounded-full font-mono">
-        Backend: {API_URL}
-      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

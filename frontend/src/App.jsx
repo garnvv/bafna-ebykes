@@ -66,6 +66,7 @@ const App = () => {
               <Route path="/bikes/:id" element={<BikeDetail />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/feedback" element={<Contact />} />
               <Route path="/compare" element={<Compare />} />
 
               {/* Auth Routes — guarded: logged-in users get redirected away */}

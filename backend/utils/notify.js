@@ -2,7 +2,10 @@ const nodemailer = require('nodemailer');
 
 // ── Email Transporter ──────────────────────────────────────────────
 const getTransporter = () => nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
+  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
@@ -13,8 +16,8 @@ const getTransporter = () => nodemailer.createTransport({
  * Send welcome email to newly onboarded customer
  */
 const sendWelcomeEmail = async ({ name, email, customerId, password, vehicle }) => {
-  if (!process.env.EMAIL_USER || process.env.EMAIL_USER === 'your_email@gmail.com') {
-    console.log('[Email] Email not configured — skipping. Set EMAIL_USER and EMAIL_PASS in .env');
+  if (!process.env.EMAIL_USER || process.env.EMAIL_USER.includes('your_email')) {
+    console.log('[Email] Email not fully configured — skipping. Set EMAIL_USER and EMAIL_PASS in Render Environment.');
     return;
   }
 

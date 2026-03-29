@@ -18,7 +18,10 @@ const sendEmail = async (to, subject, text, html, attachments = []) => {
   try {
     // Note: You'll need to configure transport with real credentials in .env
     const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS

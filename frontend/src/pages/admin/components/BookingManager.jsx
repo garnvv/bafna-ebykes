@@ -117,9 +117,9 @@ const BookingManager = ({ type = 'testrides' }) => {
   const getWhatsAppUrl = (item) => {
     if (!item.User?.phone) return null;
 
-    const branding = `\n\nGive your Feedback: http://localhost:5173/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
+    const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
 
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const API_BASE = import.meta.env.VITE_API_URL || 'https://bafna-ebykes.onrender.com';
 
     let message = '';
     if (type === 'testrides') {

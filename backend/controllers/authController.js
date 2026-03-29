@@ -8,12 +8,19 @@ const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expires
 // Store OTPs in memory (in production use Redis)
 const otpStore = new Map(); // email -> { otp, expiry }
 
-// @desc    Auth user & get token
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
+  console.log(`Login attempt for: ${email}`);
   try {
     const user = await User.findOne({ where: { email } });
-    if (user && (await user.comparePassword(password))) {
+    if (!user) {
+      console.log('User not found in DB');
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+    
+    const isMatch = await user.comparePassword(password);
+    if (isMatch) {
+      console.log('Login successful');
       res.json({
         id: user.id,
         name: user.name,
@@ -22,10 +29,30 @@ const loginUser = async (req, res) => {
         token: generateToken(user.id)
       });
     } else {
+      console.log('Password mismatch');
       res.status(401).json({ message: 'Invalid email or password' });
     }
   } catch (error) {
+    console.error('Login error:', error.message);
     res.status(500).json({ message: error.message });
+  }
+};
+
+const getStatus = async (req, res) => {
+  try {
+    await User.count();
+    res.json({ 
+      status: 'OK', 
+      database: 'Connected', 
+      env: process.env.NODE_ENV,
+      port: process.env.PORT 
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      status: 'Error', 
+      database: 'Disconnected', 
+      error: err.message 
+    });
   }
 };
 
@@ -116,4 +143,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, getUserProfile, forgotPassword, resetPassword };
+module.exports = { registerUser, loginUser, getUserProfile, forgotPassword, resetPassword, getStatus };

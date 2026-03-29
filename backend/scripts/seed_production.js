@@ -16,13 +16,12 @@ sequelize.authenticate().then(async () => {
   await sequelize.sync();
   console.log('Tables synced');
 
-  const hash = await bcrypt.hash('Ssb_10102021', 10);
   const [admin, created] = await User.findOrCreate({
     where: { email: 'bafnaebykes@gmail.com' },
     defaults: {
       name: 'Admin',
       email: 'bafnaebykes@gmail.com',
-      password: hash,
+      password: 'Ssb_10102021', // Let the model hook hash this
       role: 'admin',
       phone: '7558533371',
       customerId: 'ADMIN-001'
@@ -30,7 +29,7 @@ sequelize.authenticate().then(async () => {
   });
 
   if (!created) {
-    admin.password = hash;
+    admin.password = 'Ssb_10102021'; // Hook will hash this too
     admin.role = 'admin';
     await admin.save();
     console.log('Admin updated successfully');

@@ -100,7 +100,7 @@ const updateBookingStatus = async (req, res) => {
         ]
       });
 
-      const branding = `\n\nGive your Feedback: http://localhost:5173/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
+      const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
       const msg = `Hello, ${fullBooking.User.name}\n\nYour test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED\n\nDate: ${fullBooking.bookingDate}\nTime: ${fullBooking.timeSlot}${branding}`;
 
       await sendWhatsApp(fullBooking.User.phone, msg);
@@ -168,7 +168,7 @@ const updateServiceStatus = async (req, res) => {
         const invoice = await generateAndSaveInvoice(fullService);
 
         // WhatsApp message — includes direct download link to the PDF
-        const branding = `\n\nGive your Feedback: http://localhost:5173/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
+        const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
         const msg = `Hello, ${fullService.User.name}\n\nYour service appointment is COMPLETED\n\nTotal Bill: Rs. ${Number(service.cost).toFixed(2)}\n\nDownload Your Invoice (PDF):\n${invoice.publicUrl}\n\nThe invoice has also been sent to your email.${branding}`;
 
         await sendWhatsApp(fullService.User.phone, msg);
@@ -197,7 +197,7 @@ const updateServiceStatus = async (req, res) => {
         include: [{ model: User, attributes: ['name', 'email', 'phone'] }]
       });
 
-      const branding = `\n\nGive your Feedback: http://localhost:5173/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
+      const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
       const msg = `Hello, ${fullService.User.name}\n\nYour service appointment has been APPROVED\n\nDate: ${fullService.appointmentDate}\n\nPlease bring your vehicle to the showroom${branding}`;
 
       await sendWhatsApp(fullService.User.phone, msg);

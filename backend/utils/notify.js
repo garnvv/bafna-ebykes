@@ -54,7 +54,7 @@ const sendWelcomeEmail = async ({ name, email, customerId, password, vehicle }) 
 
           <div style="margin-top:32px;background:#0f1f1a;border:1px solid #10b981;border-radius:16px;padding:20px;text-align:center">
             <p style="margin:0;font-size:12px;color:#10b981;font-weight:700;text-transform:uppercase;letter-spacing:2px">Login at</p>
-            <p style="margin:8px 0 0;font-size:16px;font-weight:700">http://localhost:5173/login</p>
+            <p style="margin:8px 0 0;font-size:16px;font-weight:700">https://bafna-frontend.onrender.com/login</p>
           </div>
 
           <p style="margin-top:24px;font-size:12px;color:#6b7280;text-align:center">
@@ -105,8 +105,8 @@ const buildWhatsAppMessage = ({ name, customerId, password, vehicle, phone }) =>
     }
   }
 
-  message += `\nLogin: http://localhost:5173/login\n\n`;
-  message += `Give your Feedback: http://localhost:5173/feedback\n\n`;
+  message += `\nLogin: https://bafna-frontend.onrender.com/login\n\n`;
+  message += `Give your Feedback: https://bafna-frontend.onrender.com/feedback\n\n`;
   message += `BAFNA E-BYKES\n`;
   message += `24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\n`;
   message += `Contact: 7558533371 / 7709616271\n`;

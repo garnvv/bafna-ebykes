@@ -1,5 +1,6 @@
 const { Service, User, Vehicle, Bike } = require('../models');
-const { sendWhatsApp, sendEmail } = require('../utils/notificationService');
+const { sendWhatsApp } = require('../utils/notificationService');
+const { sendEmail } = require('../utils/mail');
 
 // @desc    Create new service request
 // @route   POST /api/services
@@ -82,7 +83,7 @@ const updateServiceStatus = async (req, res) => {
 
         sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
         const htmlMsg = `<h1>Service Approved</h1><p>Hello, ${fullService.User.name},</p><p>Your service appointment has been APPROVED.</p><p>Date: ${fullService.appointmentDate}</p><p>Please bring your vehicle to the showroom.</p><p>BAFNA E-BYKES</p>`;
-        sendEmail(fullService.User.email, 'Service Appointment Approved', msg, htmlMsg).catch(err => console.error('[Email Error]', err.message));
+        sendEmail({ to: fullService.User.email, subject: 'Service Appointment Approved', text: msg, html: htmlMsg });
       }
 
       res.json(service);

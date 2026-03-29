@@ -1,7 +1,8 @@
 const { User, Booking, Service, Bike, Feedback, Message, Reminder, Vehicle, StockItem, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const { sendWelcomeEmail, buildWhatsAppMessage } = require('../utils/notify');
-const { sendWhatsApp, sendEmail } = require('../utils/notificationService');
+const { sendEmail } = require('../utils/mail');
+const { sendWhatsApp } = require('../utils/notificationService');
 const { generateAndSaveInvoice } = require('../utils/pdfGenerator');
 
 // @desc    Get dashboard analytics
@@ -105,7 +106,7 @@ const updateBookingStatus = async (req, res) => {
 
       sendWhatsApp(fullBooking.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
       const htmlMsg = `<h1>Test Ride Approved</h1><p>Hello, ${fullBooking.User.name},</p><p>Your test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED.</p><p>Date: ${fullBooking.bookingDate}<br/>Time: ${fullBooking.timeSlot}</p><p>BAFNA E-BYKES</p>`;
-      sendEmail(fullBooking.User.email, 'Test Ride Approved', msg, htmlMsg).catch(err => console.error('[Email Error]', err.message));
+      sendEmail({ to: fullBooking.User.email, subject: 'Test Ride Approved', text: msg, html: htmlMsg });
     }
 
     res.json(booking);
@@ -180,13 +181,13 @@ const updateServiceStatus = async (req, res) => {
         // Email — attach PDF buffer directly
         const htmlMsg = `<h1>Service Invoice</h1><p>Hello, ${fullService.User.name},</p><p>Your service for <b>${fullService.Vehicle?.Bike?.modelName || 'your vehicle'}</b> is now complete.</p><p>Total Amount Payable: <b>&#8377;${Number(service.cost).toFixed(2)}</b></p><p>Please find your invoice attached to this email. You can also download it here: <a href="${pdfUrl}">Invoice_#SRV-${fullService.id}.pdf</a></p><p>BAFNA E-BYKES</p>`;
 
-        sendEmail(
-          fullService.User.email,
-          'Service Invoice - BAFNA E-BYKES',
-          msg,
-          htmlMsg,
-          [{ filename: invoice.filename, content: invoice.buffer }]
-        ).catch(err => console.error('[Email Error]', err.message));
+        sendEmail({
+          to: fullService.User.email,
+          subject: 'Service Invoice - BAFNA E-BYKES',
+          text: msg,
+          html: htmlMsg,
+          attachments: [{ filename: invoice.filename, content: invoice.buffer }]
+        });
 
         console.log(`[Invoice] Saved: ${invoice.filePath}`);
         console.log(`[Invoice] Public URL: ${invoice.publicUrl}`);
@@ -206,7 +207,7 @@ const updateServiceStatus = async (req, res) => {
 
       sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
       const htmlMsg = `<h1>Service Approved</h1><p>Hello, ${fullService.User.name},</p><p>Your service appointment has been APPROVED.</p><p>Date: ${fullService.appointmentDate}</p><p>Please bring your vehicle to the showroom.</p><p>BAFNA E-BYKES</p>`;
-      sendEmail(fullService.User.email, 'Service Appointment Approved', msg, htmlMsg).catch(err => console.error('[Email Error]', err.message));
+      sendEmail({ to: fullService.User.email, subject: 'Service Appointment Approved', text: msg, html: htmlMsg });
     }
 
     res.json(service);

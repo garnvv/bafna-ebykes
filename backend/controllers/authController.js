@@ -1,6 +1,8 @@
 const { User } = require('../models');
 const jwt = require('jsonwebtoken');
-const { sendEmail } = require('../utils/notificationService');
+const { sendEmail } = require('../utils/mail');
+const { sendWhatsApp } = require('../utils/notificationService');
+const { sendWelcomeEmail, buildWhatsAppMessage } = require('../utils/notify');
 const crypto = require('crypto');
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -102,9 +104,14 @@ const forgotPassword = async (req, res) => {
       </div>
     `;
 
-    await sendEmail(email, 'Password Reset OTP - BAFNA E-BYKES', `Your OTP is: ${otp} (valid for 15 minutes)`, html);
-
-    res.json({ message: 'If that email is registered, an OTP has been sent.' });
+    const text = `Your OTP is: ${otp} (valid for 15 minutes)`;
+    try {
+      sendEmail({ to: email, subject: 'Your Password Reset OTP', text, html });
+      res.status(200).json({ message: 'OTP sent to email' });
+    } catch (error) {
+      console.error('[OTP Email Error]', error.message);
+      res.status(500).json({ message: 'Failed to send OTP' });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

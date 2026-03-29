@@ -111,6 +111,11 @@ const getServiceInvoice = async (req, res) => {
     if (!service) return res.status(404).json({ message: 'Service not found' });
 
     const buffer = await generateServiceInvoiceBuffer(service);
+    
+    // Set headers for PDF download/viewing
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename=Invoice_#SRV-${service.id}.pdf`);
+    
     res.send(buffer);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -127,7 +127,7 @@ const BookingManager = ({ type = 'testrides' }) => {
     } else {
       let statusMsg = '';
       if (item.status === 'completed') {
-        const pdfUrl = `${API_BASE}/uploads/invoices/Invoice_SRV-${item.id}.pdf`;
+        const pdfUrl = `${API_BASE}/api/services/${item.id}/invoice`;
         statusMsg = `is COMPLETED\n\nTotal Bill: Rs. ${Number(item.cost).toFixed(2)}\n\nDownload Your Invoice (PDF):\n${pdfUrl}\n\nYour invoice has also been sent to your email.${branding}`;
       } else {
         statusMsg = `has been APPROVED\n\nDate: ${item.appointmentDate}\n\nPlease bring your vehicle to the showroom.${branding}`;

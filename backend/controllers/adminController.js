@@ -169,12 +169,16 @@ const updateServiceStatus = async (req, res) => {
 
         // WhatsApp message — includes direct download link to the PDF
         const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
-        const msg = `Hello, ${fullService.User.name}\n\nYour service appointment is COMPLETED\n\nTotal Bill: Rs. ${Number(service.cost).toFixed(2)}\n\nDownload Your Invoice (PDF):\n${invoice.publicUrl}\n\nThe invoice has also been sent to your email.${branding}`;
+
+        const baseUrl = process.env.API_BASE_URL || 'https://bafna-ebykes.onrender.com';
+        const pdfUrl = `${baseUrl}/api/services/${fullService.id}/invoice`;
+
+        const msg = `Hello, ${fullService.User.name}\n\nYour service appointment is COMPLETED\n\nTotal Bill: Rs. ${Number(service.cost).toFixed(2)}\n\nDownload Your Invoice (PDF):\n${pdfUrl}\n\nThe invoice has also been sent to your email.${branding}`;
 
         await sendWhatsApp(fullService.User.phone, msg);
 
         // Email — attach PDF buffer directly
-        const htmlMsg = `<h1>Service Invoice</h1><p>Hello, ${fullService.User.name},</p><p>Your service for <b>${fullService.Vehicle?.Bike?.modelName || 'your vehicle'}</b> is now complete.</p><p>Total Amount Payable: <b>&#8377;${Number(service.cost).toFixed(2)}</b></p><p>Please find your invoice attached to this email. You can also download it here: <a href="${invoice.publicUrl}">${invoice.filename}</a></p><p>BAFNA E-BYKES</p>`;
+        const htmlMsg = `<h1>Service Invoice</h1><p>Hello, ${fullService.User.name},</p><p>Your service for <b>${fullService.Vehicle?.Bike?.modelName || 'your vehicle'}</b> is now complete.</p><p>Total Amount Payable: <b>&#8377;${Number(service.cost).toFixed(2)}</b></p><p>Please find your invoice attached to this email. You can also download it here: <a href="${pdfUrl}">Invoice_#SRV-${fullService.id}.pdf</a></p><p>BAFNA E-BYKES</p>`;
 
         await sendEmail(
           fullService.User.email,

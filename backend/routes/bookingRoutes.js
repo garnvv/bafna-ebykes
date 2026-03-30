@@ -4,7 +4,7 @@ const { createBooking, getMyBookings, getAllBookings, updateBookingStatus } = re
 const { protect, admin, resolveUser } = require('../middleware/authMiddleware');
 
 router.route('/')
-  .post(createBooking)
+  .post(resolveUser, createBooking)
   .get(protect, admin, getAllBookings);
 
 router.get('/mybookings', protect, getMyBookings);

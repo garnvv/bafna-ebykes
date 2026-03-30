@@ -1,50 +1,23 @@
 /**
- * Notification Service
- * Handles mock WhatsApp and real Email notifications
+ * Notification Service — delegates to the unified notify.js
+ * This file exists for backward compatibility with older imports.
  */
-const nodemailer = require('nodemailer');
+const { sendEmail: unifiedSendEmail } = require('./notify');
 
-// Mock WhatsApp Sender
+// Mock WhatsApp Sender (logs to console)
 const sendWhatsApp = async (phone, message) => {
-  console.log(`[WHATSAPP MOCK] Sending to ${phone}: ${message}`);
-  // In a real scenario, you'd use Twilio or a similar API here:
-  // const client = require('twilio')(sid, auth);
-  // await client.messages.create({ body: message, from: 'whatsapp:+14155238886', to: `whatsapp:${phone}` });
+  console.log(`[WHATSAPP MOCK] To: ${phone}`);
   return true;
 };
 
-// Email Sender
+// Email Sender — uses the unified, robust notify.js engine
 const sendEmail = async (to, subject, text, html, attachments = []) => {
-  try {
-    // Note: You'll need to configure transport with real credentials in .env
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
-
-    await transporter.sendMail({
-      from: `"Bafna E-Bykes" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      text,
-      html,
-      attachments
-    });
-    console.log(`[EMAIL] Sent to ${to}: ${subject}`);
-    return true;
-  } catch (error) {
-    console.error('[EMAIL ERROR]', error.message);
-    return false;
+  // Support both old (positional args) and new (object) calling conventions
+  if (typeof to === 'object') {
+    return unifiedSendEmail(to);
   }
+  return unifiedSendEmail({ to, subject, text, html, attachments });
 };
 
-module.exports = {
-  sendWhatsApp,
-  sendEmail
-};
+module.exports = { sendWhatsApp, sendEmail };
+

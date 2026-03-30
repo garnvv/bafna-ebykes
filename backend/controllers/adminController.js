@@ -103,11 +103,22 @@ const updateBookingStatus = async (req, res) => {
 
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const branding = `\n\nGive your Feedback: ${frontendUrl}/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
-      const msg = `Hello, ${fullBooking.User.name}\n\nYour test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED\n\nDate: ${fullBooking.bookingDate}\nTime: ${fullBooking.timeSlot}${branding}`;
+      
+      const userName = fullBooking.User ? fullBooking.User.name : (fullBooking.guestName || 'Valued Customer');
+      const userPhone = fullBooking.User ? fullBooking.User.phone : fullBooking.guestPhone;
+      const userEmail = fullBooking.User ? fullBooking.User.email : fullBooking.guestEmail;
 
-      await sendWhatsApp(fullBooking.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
-      const htmlMsg = `<h1>Test Ride Approved</h1><p>Hello, ${fullBooking.User.name},</p><p>Your test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED.</p><p>Date: ${fullBooking.bookingDate}<br/>Time: ${fullBooking.timeSlot}</p><p>BAFNA E-BYKES</p>`;
-      await sendEmail({ to: fullBooking.User.email, subject: 'Test Ride Approved', text: msg, html: htmlMsg });
+      const msg = `Hello, ${userName}\n\nYour test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED\n\nDate: ${fullBooking.bookingDate}\nTime: ${fullBooking.timeSlot}${branding}`;
+
+      if (userPhone) {
+        await sendWhatsApp(userPhone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
+      }
+      
+      const htmlMsg = `<h1>Test Ride Approved</h1><p>Hello, ${userName},</p><p>Your test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED.</p><p>Date: ${fullBooking.bookingDate}<br/>Time: ${fullBooking.timeSlot}</p><p>BAFNA E-BYKES</p>`;
+      
+      if (userEmail) {
+        await sendEmail({ to: userEmail, subject: 'Test Ride Approved', text: msg, html: htmlMsg });
+      }
     }
 
     res.json(booking);

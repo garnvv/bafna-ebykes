@@ -115,15 +115,17 @@ const BookingManager = ({ type = 'testrides' }) => {
   };
 
   const getWhatsAppUrl = (item) => {
-    if (!item.User?.phone) return null;
+    const phone = item.User?.phone || item.guestPhone;
+    if (!phone) return null;
 
     const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
 
     const API_BASE = import.meta.env.VITE_API_URL || 'https://bafna-ebykes.onrender.com';
 
     let message = '';
+    const name = item.User?.name || item.guestName || 'Valued Customer';
     if (type === 'testrides') {
-      message = `Hello, ${item.User.name}\n\nYour test ride for ${item.Bike?.brand} ${item.Bike?.modelName} is APPROVED\n\nDate: ${item.bookingDate}\nTime: ${item.timeSlot}${branding}`;
+      message = `Hello, ${name}\n\nYour test ride for ${item.Bike?.brand} ${item.Bike?.modelName} is APPROVED\n\nDate: ${item.bookingDate}\nTime: ${item.timeSlot}${branding}`;
     } else {
       let statusMsg = '';
       if (item.status === 'completed') {
@@ -132,10 +134,10 @@ const BookingManager = ({ type = 'testrides' }) => {
       } else {
         statusMsg = `has been APPROVED\n\nDate: ${item.appointmentDate}\n\nPlease bring your vehicle to the showroom.${branding}`;
       }
-      message = `Hello, ${item.User.name}\n\nYour service appointment ${statusMsg}`;
+      message = `Hello, ${name}\n\nYour service appointment ${statusMsg}`;
     }
 
-    return `https://wa.me/${item.User.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
   };
 
   const handleDownloadInvoice = async (id) => {
@@ -176,8 +178,8 @@ const BookingManager = ({ type = 'testrides' }) => {
                         <User className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="font-bold text-[#1d1d1f]">{item.User?.name}</p>
-                        <p className="text-xs text-gray-500">{item.User?.email}</p>
+                        <p className="font-bold text-[#1d1d1f]">{item.User?.name || item.guestName || 'Guest'}</p>
+                        <p className="text-xs text-gray-500">{item.User?.email || item.guestEmail || 'N/A'}</p>
                       </div>
                     </div>
                   </td>
@@ -243,7 +245,7 @@ const BookingManager = ({ type = 'testrides' }) => {
                         >
                           Mark Finished
                         </button>
-                        {item.User?.phone && (
+                        {(item.User?.phone || item.guestPhone) && (
                           <a
                             href={getWhatsAppUrl(item)}
                             target="_blank"

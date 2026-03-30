@@ -5,7 +5,7 @@ const nodemailer = require('nodemailer');
  * Create a robust Gmail SMTP transporter.
  * Using explicit host/port/secure settings is more reliable than service: 'gmail'.
  */
-const getTransporter = () => {
+const getTransporter = (portToTry = 465) => {
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASS;
 
@@ -14,19 +14,18 @@ const getTransporter = () => {
     return null;
   }
 
+  const isSecure = portToTry === 465;
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // true for 465
-    auth: {
-      user: user,
-      pass: pass
-    },
+    port: portToTry,
+    secure: isSecure,
+    auth: { user, pass },
     debug: true,
     logger: true,
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 15000
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+    tls: isSecure ? undefined : { rejectUnauthorized: false }
   });
 };
 
@@ -35,26 +34,35 @@ const getTransporter = () => {
  * Replaces functionality from the old mail.js.
  */
 const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
-  const transporter = getTransporter();
+  let transporter = getTransporter(465); // Try 465 first
   if (!transporter) return false;
 
   try {
     const info = await transporter.sendMail({
       from: `"BAFNA E-BYKES" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      text,
-      html,
-      attachments
+      to, subject, text, html, attachments
     });
     console.log(`[MAIL SUCCESS] Sent to ${to}. MessageId: ${info.messageId}`);
     return true;
   } catch (error) {
-    console.error('[MAIL ERROR DETAILS]');
-    console.error('To:', to);
-    console.error('Subject:', subject);
-    console.error('Error:', error.message);
-    return false;
+    console.warn(`[MAIL WARNING] Port 465 failed: ${error.message}. Trying Port 587 Fallback...`);
+    
+    // Try Fallback on Port 587
+    const fallbackTransporter = getTransporter(587);
+    if (!fallbackTransporter) return false;
+
+    try {
+      const info = await fallbackTransporter.sendMail({
+        from: `"BAFNA E-BYKES" <${process.env.EMAIL_USER}>`,
+        to, subject, text, html, attachments
+      });
+      console.log(`[MAIL SUCCESS] Fallback (Port 587) delivered to ${to}. MessageId: ${info.messageId}`);
+      return true;
+    } catch (fError) {
+      console.error('[MAIL ERROR] Both ports (465 & 587) failed.');
+      console.error('Final Error:', fError.message);
+      return false;
+    }
   }
 };
 

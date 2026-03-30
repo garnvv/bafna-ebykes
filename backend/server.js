@@ -71,8 +71,17 @@ const startServer = async () => {
     // In production, you might not want force: true or alter: true
     // Temporarily disabled alter: true to avoid "Too many keys" error while cleaning up
     // Synchronize Database with Models
-    // Using { alter: true } ensures missing columns like 'guestName' are added to production
+    // Using { alter: true } ensures missing columns are added
     await sequelize.sync({ alter: true });
+    
+    // Explicit SQL patch to ensure 'userId' can be NULL (fixes guest booking error)
+    try {
+      await sequelize.query("ALTER TABLE `Bookings` MODIFY `userId` int NULL");
+      console.log('[DB] Explicit Patch: userId is now NULLABLE');
+    } catch (err) {
+      console.log('[DB] Patch Skip: userId already nullable or column missing.');
+    }
+    
     console.log('[DB] Database schema synchronized (alter: true)');
 
     app.listen(PORT, () => {

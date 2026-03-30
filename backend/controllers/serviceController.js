@@ -1,6 +1,6 @@
 const { Service, User, Vehicle, Bike } = require('../models');
 const { sendWhatsApp } = require('../utils/notificationService');
-const { sendEmail } = require('../utils/mail');
+const { sendEmail } = require('../utils/notify');
 
 // @desc    Create new service request
 // @route   POST /api/services

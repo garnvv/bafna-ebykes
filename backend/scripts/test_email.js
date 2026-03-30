@@ -2,7 +2,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-const { sendEmail } = require('../utils/mail');
+const { sendEmail } = require('../utils/notify');
 
 async function testEmail() {
   console.log('Testing email with user:', process.env.EMAIL_USER);

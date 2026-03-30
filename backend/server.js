@@ -70,9 +70,10 @@ const startServer = async () => {
     // Sync models
     // In production, you might not want force: true or alter: true
     // Temporarily disabled alter: true to avoid "Too many keys" error while cleaning up
-    await sequelize.sync();
-    // await sequelize.sync({ alter: true });
-    console.log('Database synced.');
+    // Synchronize Database with Models
+    // Using { alter: true } ensures missing columns like 'guestName' are added to production
+    await sequelize.sync({ alter: true });
+    console.log('[DB] Database schema synchronized (alter: true)');
 
     app.listen(PORT, () => {
       console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);

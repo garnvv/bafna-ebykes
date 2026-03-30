@@ -99,10 +99,10 @@ const AdminDashboard = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                  { label: "Fleet size", value: analytics.summary.totalBikes, icon: Bike, color: "text-primary" },
-                  { label: "Registered Users", value: analytics.summary.totalUsers, icon: Users, color: "text-blue-400" },
-                  { label: "Active Bookings", value: analytics.summary.totalBookings, icon: Calendar, color: "text-green-400" },
-                  { label: "Service Queue", value: analytics.summary.totalServices, icon: Wrench, color: "text-orange-400" }
+                  { label: "Fleet size", value: analytics?.summary?.totalBikes ?? 0, icon: Bike, color: "text-primary" },
+                  { label: "Registered Users", value: analytics?.summary?.totalUsers ?? 0, icon: Users, color: "text-blue-400" },
+                  { label: "Active Bookings", value: analytics?.summary?.totalBookings ?? 0, icon: Calendar, color: "text-green-400" },
+                  { label: "Service Queue", value: analytics?.summary?.totalServices ?? 0, icon: Wrench, color: "text-orange-400" }
                 ].map((stat, i) => (
                   <div key={i} className="bg-white p-8 rounded-[32px] border border-gray-200 shadow-sm relative overflow-hidden group">
                     <stat.icon className={`absolute -right-4 -bottom-4 w-24 h-24 opacity-[0.03] ${stat.color} transition-transform group-hover:scale-110`} />
@@ -135,30 +135,34 @@ const AdminDashboard = () => {
                     <TrendingUp className="w-6 h-6 mr-3 text-primary" /> Booking Velocity
                   </h3>
                   <div className="h-72">
-                    <Line 
-                      data={{
-                        labels: analytics.chartData.map(d => d.month),
-                        datasets: [{
-                          label: 'Bookings',
-                          data: analytics.chartData.map(d => d.count),
-                          borderColor: '#10b981',
-                          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                          borderWidth: 4,
-                          pointRadius: 6,
-                          fill: true,
-                          tension: 0.4
-                        }]
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { 
-                          y: { beginAtZero: true, border: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' } },
-                          x: { border: { display: false }, grid: { display: false } }
-                        }
-                      }}
-                    />
+                    {analytics?.chartData ? (
+                      <Line 
+                        data={{
+                          labels: analytics.chartData.map(d => d.month),
+                          datasets: [{
+                            label: 'Bookings',
+                            data: analytics.chartData.map(d => d.count),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 4,
+                            pointRadius: 6,
+                            fill: true,
+                            tension: 0.4
+                          }]
+                        }}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: { legend: { display: false } },
+                          scales: { 
+                            y: { beginAtZero: true, border: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                            x: { border: { display: false }, grid: { display: false } }
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-gray-400 italic">No chart data available</div>
+                    )}
                   </div>
                 </div>
 
@@ -167,24 +171,28 @@ const AdminDashboard = () => {
                      <Activity className="w-6 h-6 mr-3 text-primary" /> Live Traffic
                   </h3>
                   <div className="space-y-4">
-                    {analytics.recentBookings.map((booking) => (
-                      <div key={booking.id} className="flex items-center justify-between p-5 bg-[#f5f5f7] rounded-2xl border border-transparent hover:border-gray-200 transition-colors">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-[#1d1d1f] font-bold shadow-sm">
-                            {booking.User?.name[0]}
+                    {analytics?.recentBookings?.length > 0 ? (
+                      analytics.recentBookings.map((booking) => (
+                        <div key={booking.id} className="flex items-center justify-between p-5 bg-[#f5f5f7] rounded-2xl border border-transparent hover:border-gray-200 transition-colors">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-[#1d1d1f] font-bold shadow-sm">
+                              {booking.User?.name?.[0] || 'G'}
+                            </div>
+                            <div>
+                              <p className="font-bold text-sm text-[#1d1d1f]">{booking.User?.name || 'Guest'}</p>
+                              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">{booking.Bike?.modelName || 'Test Ride'}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-bold text-sm text-[#1d1d1f]">{booking.User?.name}</p>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">{booking.Bike?.modelName}</p>
+                          <div className="text-right">
+                             <span className="text-[10px] bg-white border border-gray-200 px-2 py-1 rounded font-bold text-gray-500 uppercase tracking-widest shadow-sm">
+                               {booking.status}
+                             </span>
                           </div>
                         </div>
-                        <div className="text-right">
-                           <span className="text-[10px] bg-white border border-gray-200 px-2 py-1 rounded font-bold text-gray-500 uppercase tracking-widest shadow-sm">
-                             {booking.status}
-                           </span>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <div className="p-10 text-center text-gray-400 italic">No recent activity</div>
+                    )}
                   </div>
                 </div>
               </div>

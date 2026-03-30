@@ -16,18 +16,17 @@ const getTransporter = () => {
 
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // true for 465, false for 587
+    port: 465,
+    secure: true, // true for 465
     auth: {
       user: user,
       pass: pass
     },
-    tls: {
-      rejectUnauthorized: false // Helps in cloud environments
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000
+    debug: true,
+    logger: true,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 15000
   });
 };
 

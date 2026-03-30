@@ -9,10 +9,11 @@ const { generateAndSaveInvoice } = require('../utils/pdfGenerator');
 // @access  Private/Admin
 const getAnalytics = async (req, res) => {
   try {
-    const totalUsers = await User.count({ where: { role: 'user' } });
-    const totalBookings = await Booking.count();
-    const totalServices = await Service.count();
-    const totalBikes = await Bike.count();
+    // Fetching data with fallbacks to avoid entire analytics failing on a single error
+    const totalUsers = await User.count({ where: { role: 'user' } }).catch(() => 0);
+    const totalBookings = await Booking.count().catch(() => 0);
+    const totalServices = await Service.count().catch(() => 0);
+    const totalBikes = await Bike.count().catch(() => 0);
 
     const recentBookings = await Booking.findAll({
       limit: 5,
@@ -21,13 +22,13 @@ const getAnalytics = async (req, res) => {
         { model: User, attributes: ['name'] },
         { model: Bike, attributes: ['modelName'] }
       ]
-    });
+    }).catch(() => []);
 
     const recentFeedback = await Feedback.findAll({
       limit: 5,
       order: [['createdAt', 'DESC']],
       include: [{ model: User, attributes: ['name'] }]
-    });
+    }).catch(() => []);
 
     // Monthly data for charts (Last 6 months)
     const monthlyBookings = [];
@@ -47,7 +48,7 @@ const getAnalytics = async (req, res) => {
             [Op.lt]: endOfMonth
           }
         }
-      });
+      }).catch(() => 0);
 
       const monthName = startOfMonth.toLocaleString('default', { month: 'short' });
       monthlyBookings.push({ month: monthName, count });

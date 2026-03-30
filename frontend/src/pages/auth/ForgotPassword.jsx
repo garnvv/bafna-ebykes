@@ -37,8 +37,8 @@ const ForgotPassword = () => {
     setLoading(true);
     setError('');
     try {
-      // Set a local timeout for this specific request to avoid hanging the UI
-      const response = await api.post('/auth/forgot-password', { email: cleanEmail }, { timeout: 15000 });
+      // Set a generous timeout (60s) because Render free tier takes 30s-45s to wake from hibernation, plus Google SMTP connection time
+      const response = await api.post('/auth/forgot-password', { email: cleanEmail }, { timeout: 60000 });
       setStep(STEPS.OTP);
       startCooldown();
     } catch (err) {

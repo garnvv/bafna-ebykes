@@ -1,4 +1,8 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// CRITICAL FIX: Render + Node 18+ defaults to IPv6, which Google SMTP aggressively blocks or hangs on. This forces IPv4.
+dns.setDefaultResultOrder('ipv4first');
 
 // ── Email Transporter ──────────────────────────────────────────────
 /**
@@ -17,6 +21,7 @@ const getTransporter = (portToTry = 465) => {
   const isSecure = portToTry === 465;
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
+    family: 4, // Explicitly force IPv4 network resolving for GMail SMTP timeout bugs
     port: portToTry,
     secure: isSecure,
     auth: { user, pass },

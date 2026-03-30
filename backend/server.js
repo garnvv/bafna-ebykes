@@ -67,22 +67,48 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('Database connected successfully.');
     
-    // Sync models
-    // In production, you might not want force: true or alter: true
-    // Temporarily disabled alter: true to avoid "Too many keys" error while cleaning up
-    // Synchronize Database with Models
-    // Using { alter: true } ensures missing columns are added
-    await sequelize.sync({ alter: true });
+    // Sync models - using standard sync to prevent 'Too many keys' crashes
+    await sequelize.sync();
     
-    // Explicit SQL patch to ensure 'userId' can be NULL (fixes guest booking error)
+    // Rigorous explicit patch for 'userId' NULL to fix guest booking failures
     try {
-      await sequelize.query("ALTER TABLE `Bookings` MODIFY `userId` int NULL");
-      console.log('[DB] Explicit Patch: userId is now NULLABLE');
+      // 1. Find the Foreign Key constraint name dynamically
+      const [fkResults] = await sequelize.query(`
+        SELECT CONSTRAINT_NAME 
+        FROM information_schema.KEY_COLUMN_USAGE 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'Bookings' 
+          AND COLUMN_NAME = 'userId' 
+          AND REFERENCED_TABLE_NAME IS NOT NULL;
+      `);
+      
+      // 2. Drop the existing Foreign Key if it exists
+      if (fkResults && fkResults.length > 0) {
+        for (const row of fkResults) {
+           await sequelize.query(`ALTER TABLE Bookings DROP FOREIGN KEY \`${row.CONSTRAINT_NAME}\``);
+        }
+      }
+      
+      // 3. Modify the column to safely accept NULL values
+      await sequelize.query("ALTER TABLE Bookings MODIFY `userId` int NULL");
+      
+      // 4. Re-add the constrained Foreign Key relationship
+      await sequelize.query(`
+        ALTER TABLE Bookings 
+        ADD CONSTRAINT fk_bookings_userId_patch 
+        FOREIGN KEY (userId) REFERENCES Users(id) ON DELETE SET NULL ON UPDATE CASCADE
+      `);
+      
+      console.log('[DB] ✅ Explicit Patch Applied: Bookings.userId is now formally NULLABLE');
     } catch (err) {
-      console.log('[DB] Patch Skip: userId already nullable or column missing.');
+      if (err.message.includes('Duplicate check constraint') || err.message.includes('already exists')) {
+        console.log('[DB] Patch ignored: userId is already patched correctly.');
+      } else {
+        console.warn('[DB] Patch Skipped/Failed (Could be harmless if already Nullable). Error:', err.message);
+      }
     }
     
-    console.log('[DB] Database schema synchronized (alter: true)');
+    console.log('[DB] Database models fully initialized');
 
     app.listen(PORT, () => {
       console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);

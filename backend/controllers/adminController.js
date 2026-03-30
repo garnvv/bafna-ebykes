@@ -101,7 +101,7 @@ const updateBookingStatus = async (req, res) => {
         ]
       });
 
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://bafna-frontend.onrender.com';
       const branding = `\n\nGive your Feedback: ${frontendUrl}/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
       
       const userName = fullBooking.User ? fullBooking.User.name : (fullBooking.guestName || 'Valued Customer');
@@ -181,7 +181,7 @@ const updateServiceStatus = async (req, res) => {
         const invoice = await generateAndSaveInvoice(fullService);
 
         // WhatsApp message — includes direct download link to the PDF
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = process.env.FRONTEND_URL || 'https://bafna-frontend.onrender.com';
         const branding = `\n\nGive your Feedback: ${frontendUrl}/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
 
         const baseUrl = process.env.API_BASE_URL || 'http://localhost:5001';
@@ -215,7 +215,7 @@ const updateServiceStatus = async (req, res) => {
         include: [{ model: User, attributes: ['name', 'email', 'phone'] }]
       });
 
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://bafna-frontend.onrender.com';
       const branding = `\n\nGive your Feedback: ${frontendUrl}/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
       const msg = `Hello, ${fullService.User.name}\n\nYour service appointment has been APPROVED\n\nDate: ${fullService.appointmentDate}\n\nPlease bring your vehicle to the showroom${branding}`;
 

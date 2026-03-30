@@ -126,7 +126,7 @@ const sendWelcomeEmail = async ({ name, email, customerId, password, vehicle }) 
           </table>
           <div style="margin-top:32px;background:#0f1f1a;border:1px solid #10b981;border-radius:16px;padding:20px;text-align:center">
             <p style="margin:0;font-size:12px;color:#10b981;font-weight:700;text-transform:uppercase;letter-spacing:2px">Login at</p>
-            <p style="margin:8px 0 0;font-size:16px;font-weight:700">${process.env.FRONTEND_URL || 'http://localhost:5173'}/login</p>
+            <p style="margin:8px 0 0;font-size:16px;font-weight:700">${process.env.FRONTEND_URL || 'https://bafna-frontend.onrender.com'}/login</p>
           </div>
           <p style="margin-top:24px;font-size:12px;color:#6b7280;text-align:center">
             Please change your password after first login.<br/>
@@ -192,7 +192,7 @@ const buildWhatsAppMessage = ({ name, customerId, password, vehicle, phone }) =>
     }
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://bafna-frontend.onrender.com';
   message += `\nLogin: ${frontendUrl}/login\n\n`;
   message += `Give your Feedback: ${frontendUrl}/feedback\n\n`;
   message += `BAFNA E-BYKES\n`;

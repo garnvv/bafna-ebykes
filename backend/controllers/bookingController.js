@@ -89,7 +89,7 @@ const updateBookingStatus = async (req, res) => {
         const email = fullBooking.User ? fullBooking.User.email : fullBooking.guestEmail;
         const phone = fullBooking.User ? fullBooking.User.phone : fullBooking.guestPhone;
         
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = process.env.FRONTEND_URL || 'https://bafna-frontend.onrender.com';
         const branding = `\n\nGive your Feedback: ${frontendUrl}/feedback\n\nBAFNA E-BYKES\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
         
         const msg = `Hello, ${name}\n\nYour test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED\n\nDate: ${fullBooking.bookingDate}\nTime: ${fullBooking.timeSlot}${branding}`;

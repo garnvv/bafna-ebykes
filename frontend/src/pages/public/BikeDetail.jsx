@@ -4,6 +4,7 @@ import api, { API_URL } from '../../services/api';
 import { Battery, Zap, Timer, Award, Shield, CheckCircle, ArrowLeft, X, ChevronLeft, ChevronRight, Maximize2, Gauge, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../admin/components/Modal';
+import { useAuth } from '../../context/AuthContext';
 
 const BikeDetail = () => {
   const { id } = useParams();
@@ -13,6 +14,7 @@ const BikeDetail = () => {
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,10 +42,10 @@ const BikeDetail = () => {
 
     try {
       await api.post('/bookings', { ...bookingData, bikeId: id });
-      alert('Test ride requested! Track your status in the dashboard.');
+      alert('Test ride requested! We will notify you once it is approved.');
       setIsBookingModalOpen(false);
     } catch (err) {
-      alert('Failed to book. Please sign in first.');
+      alert(err.response?.data?.message || 'Failed to book. Please try again later.');
     }
   };
 
@@ -209,6 +211,18 @@ const BikeDetail = () => {
 
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title={`Book Test Ride: ${bike?.modelName}`}>
         <form onSubmit={handleQuickBooking} className="space-y-6">
+          {!user && (
+            <div className="space-y-4 py-4 border-b border-gray-100">
+               <p className="text-xs font-bold uppercase text-primary tracking-widest">Guest Contact Information</p>
+               <div className="space-y-4">
+                 <input name="guestName" type="text" placeholder="Full Name" required className="w-full bg-[#f8f8fa] border border-gray-200 rounded-xl py-4 px-6 outline-none focus:border-primary shadow-sm text-[#1d1d1f]" />
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <input name="guestEmail" type="email" placeholder="Email Address" required className="w-full bg-[#f8f8fa] border border-gray-200 rounded-xl py-4 px-6 outline-none focus:border-primary shadow-sm text-[#1d1d1f]" />
+                   <input name="guestPhone" type="tel" placeholder="Phone Number" required className="w-full bg-[#f8f8fa] border border-gray-200 rounded-xl py-4 px-6 outline-none focus:border-primary shadow-sm text-[#1d1d1f]" />
+                 </div>
+               </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase text-[#1d1d1f] tracking-widest">Select Date</label>
@@ -229,8 +243,13 @@ const BikeDetail = () => {
             * A valid driving license is required upon arrival.
           </p>
           <button type="submit" className="btn-primary w-full py-5 text-lg font-black uppercase tracking-widest">
-            CONFIRM RESERVATION
+            {user ? 'CONFIRM RESERVATION' : 'BOOK AS GUEST'}
           </button>
+          {!user && (
+            <p className="text-center text-xs text-gray-500 font-medium">
+              Already have an account? <Link to="/login" className="text-primary font-bold">Login here</Link>
+            </p>
+          )}
         </form>
       </Modal>
 

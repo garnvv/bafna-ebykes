@@ -1,8 +1,6 @@
 const { User } = require('../models');
 const jwt = require('jsonwebtoken');
-const { sendEmail } = require('../utils/mail');
-const { sendWhatsApp } = require('../utils/notificationService');
-const { sendWelcomeEmail, buildWhatsAppMessage } = require('../utils/notify');
+const { sendEmail, sendWelcomeEmail, buildWhatsAppMessage } = require('../utils/notify');
 const crypto = require('crypto');
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -78,13 +76,15 @@ const getUserProfile = async (req, res) => {
 // @access  Public
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
+  console.log(`[Forgot Password] Request received for: ${email}`);
   try {
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      // Don't reveal if email exists -- still return 200
+      console.log(`[Forgot Password] User not found: ${email}`);
       return res.json({ message: 'If that email is registered, an OTP has been sent.' });
     }
 
+    console.log(`[Forgot Password] Generating OTP for: ${user.name}`);
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiry = Date.now() + 15 * 60 * 1000; // 15 minutes
@@ -105,14 +105,15 @@ const forgotPassword = async (req, res) => {
     `;
 
     const text = `Your OTP is: ${otp} (valid for 15 minutes)`;
-    try {
-      sendEmail({ to: email, subject: 'Your Password Reset OTP', text, html });
-      res.status(200).json({ message: 'OTP sent to email' });
-    } catch (error) {
-      console.error('[OTP Email Error]', error.message);
-      res.status(500).json({ message: 'Failed to send OTP' });
-    }
+    
+    // Send email in background - DO NOT AWAIT - to keep UI responsive
+    sendEmail({ to: email, subject: 'Your Password Reset OTP', text, html })
+      .catch(err => console.error('[OTP EMAIL BACKGROUND ERROR]', err.message));
+
+    // Return success immediately so frontend moves to OTP entry screen
+    return res.status(200).json({ message: 'OTP sent to email' });
   } catch (error) {
+    console.error('[Forgot Password Error]', error.message);
     res.status(500).json({ message: error.message });
   }
 };

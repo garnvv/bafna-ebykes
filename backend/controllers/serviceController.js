@@ -78,12 +78,13 @@ const updateServiceStatus = async (req, res) => {
           include: [{ model: User, attributes: ['name', 'email', 'phone'] }]
         });
 
-        const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const branding = `\n\nGive your Feedback: ${frontendUrl}/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
         const msg = `Hello, ${fullService.User.name}\n\nYour service appointment has been APPROVED\n\nDate: ${fullService.appointmentDate}\n\nPlease bring your vehicle to the showroom${branding}`;
 
-        sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
+        await sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
         const htmlMsg = `<h1>Service Approved</h1><p>Hello, ${fullService.User.name},</p><p>Your service appointment has been APPROVED.</p><p>Date: ${fullService.appointmentDate}</p><p>Please bring your vehicle to the showroom.</p><p>BAFNA E-BYKES</p>`;
-        sendEmail({ to: fullService.User.email, subject: 'Service Appointment Approved', text: msg, html: htmlMsg });
+        await sendEmail({ to: fullService.User.email, subject: 'Service Appointment Approved', text: msg, html: htmlMsg });
       }
 
       res.json(service);

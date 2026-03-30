@@ -1,0 +1,54 @@
+services:
+  # 1. Backend Web Service (Node.js)
+  - type: web
+    name: bafna-backend
+    runtime: node
+    plan: free # Change to 'starter' if you need persistent storage
+    region: singapore # Choose the region closest to your customers
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: JWT_SECRET
+        generateValue: true # Generates a secure random key automatically
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: FRONTEND_URL
+        fromStaticSite:
+          name: bafna-frontend
+          property: url
+      - key: API_BASE_URL
+        fromService:
+          type: web
+          name: bafna-backend
+          property: host
+
+  # 2. Frontend Static Site (React/Vite)
+  - type: static
+    name: bafna-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: bafna-backend
+          property: host

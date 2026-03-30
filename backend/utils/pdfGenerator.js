@@ -115,7 +115,7 @@ const generateAndSaveInvoice = async (service) => {
   const filePath = path.join(invoicesDir, filename);
   fs.writeFileSync(filePath, buffer);
 
-  const baseUrl = process.env.API_BASE_URL || 'https://bafna-ebykes.onrender.com';
+  const baseUrl = process.env.API_BASE_URL || 'http://localhost:5001';
   const publicUrl = `${baseUrl}/uploads/invoices/${filename}`;
 
   return { filePath, publicUrl, filename, buffer };

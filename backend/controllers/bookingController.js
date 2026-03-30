@@ -5,7 +5,7 @@ const { sendWhatsApp, sendEmail } = require('../utils/notificationService');
 // @route   POST /api/bookings
 // @access  Private
 const createBooking = async (req, res) => {
-  const { bikeId, bookingDate, timeSlot, notes } = req.body;
+  const { bikeId, bookingDate, timeSlot, notes, guestName, guestEmail, guestPhone } = req.body;
 
   try {
     // Check if slot is already booked for this bike
@@ -18,7 +18,10 @@ const createBooking = async (req, res) => {
     }
 
     const booking = await Booking.create({
-      userId: req.user.id,
+      userId: req.user ? req.user.id : null,
+      guestName: req.user ? null : guestName,
+      guestEmail: req.user ? null : guestEmail,
+      guestPhone: req.user ? null : guestPhone,
       bikeId,
       bookingDate,
       timeSlot,
@@ -82,17 +85,8 @@ const updateBookingStatus = async (req, res) => {
           ]
         });
 
-        const msg = `Hello, ${fullBooking.User.name}! 👋
-        Your test ride has been *APPROVED* ✅
-
-        🏍️ Bike: ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName}
-        📅 Date: ${fullBooking.bookingDate}
-        ⏰ Time: ${fullBooking.timeSlot}
-
-        See you soon! 😊`;
-
-        await sendWhatsApp(fullBooking.User.phone, msg);
-        await sendEmail(fullBooking.User.email, 'Test Ride Approved!', msg, `<h1>Approved!</h1><p>${msg}</p>`);
+        if (phone) await sendWhatsApp(phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
+        if (email) await sendEmail({ to: email, subject: 'Test Ride Approved!', text: msg, html });
       }
 
       res.json(booking);

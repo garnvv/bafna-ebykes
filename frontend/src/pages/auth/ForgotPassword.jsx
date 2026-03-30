@@ -31,14 +31,22 @@ const ForgotPassword = () => {
 
   const handleSendOtp = async (e) => {
     e?.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) { showError('Please enter a valid email address.'); return; }
+    
     setLoading(true);
     setError('');
     try {
-      await api.post('/auth/forgot-password', { email });
+      // Set a local timeout for this specific request to avoid hanging the UI
+      const response = await api.post('/auth/forgot-password', { email: cleanEmail }, { timeout: 15000 });
       setStep(STEPS.OTP);
       startCooldown();
     } catch (err) {
-      showError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
+      console.error('[Forgot Password Error]', err);
+      let msg = 'Failed to send OTP. Please try again.';
+      if (err.code === 'ECONNABORTED') msg = 'Request timed out. Please check your internet or try again.';
+      if (err.response?.data?.message) msg = err.response.data.message;
+      showError(msg);
     } finally {
       setLoading(false);
     }

@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { createBooking, getMyBookings, getAllBookings, updateBookingStatus } = require('../controllers/bookingController');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, admin, resolveUser } = require('../middleware/authMiddleware');
 
 router.route('/')
-  .post(protect, createBooking)
+  .post(createBooking)
   .get(protect, admin, getAllBookings);
 
 router.get('/mybookings', protect, getMyBookings);

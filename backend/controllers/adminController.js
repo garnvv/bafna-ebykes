@@ -1,7 +1,6 @@
 const { User, Booking, Service, Bike, Feedback, Message, Reminder, Vehicle, StockItem, sequelize } = require('../models');
 const { Op } = require('sequelize');
-const { sendWelcomeEmail, buildWhatsAppMessage } = require('../utils/notify');
-const { sendEmail } = require('../utils/mail');
+const { sendWelcomeEmail, sendNotificationEmail, sendEmail, buildWhatsAppMessage } = require('../utils/notify');
 const { sendWhatsApp } = require('../utils/notificationService');
 const { generateAndSaveInvoice } = require('../utils/pdfGenerator');
 
@@ -101,12 +100,13 @@ const updateBookingStatus = async (req, res) => {
         ]
       });
 
-      const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const branding = `\n\nGive your Feedback: ${frontendUrl}/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
       const msg = `Hello, ${fullBooking.User.name}\n\nYour test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED\n\nDate: ${fullBooking.bookingDate}\nTime: ${fullBooking.timeSlot}${branding}`;
 
-      sendWhatsApp(fullBooking.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
+      await sendWhatsApp(fullBooking.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
       const htmlMsg = `<h1>Test Ride Approved</h1><p>Hello, ${fullBooking.User.name},</p><p>Your test ride for ${fullBooking.Bike.brand} ${fullBooking.Bike.modelName} is APPROVED.</p><p>Date: ${fullBooking.bookingDate}<br/>Time: ${fullBooking.timeSlot}</p><p>BAFNA E-BYKES</p>`;
-      sendEmail({ to: fullBooking.User.email, subject: 'Test Ride Approved', text: msg, html: htmlMsg });
+      await sendEmail({ to: fullBooking.User.email, subject: 'Test Ride Approved', text: msg, html: htmlMsg });
     }
 
     res.json(booking);
@@ -169,19 +169,20 @@ const updateServiceStatus = async (req, res) => {
         const invoice = await generateAndSaveInvoice(fullService);
 
         // WhatsApp message — includes direct download link to the PDF
-        const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const branding = `\n\nGive your Feedback: ${frontendUrl}/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
 
-        const baseUrl = process.env.API_BASE_URL || 'https://bafna-ebykes.onrender.com';
+        const baseUrl = process.env.API_BASE_URL || 'http://localhost:5001';
         const pdfUrl = `${baseUrl}/api/services/${fullService.id}/invoice`;
 
         const msg = `Hello, ${fullService.User.name}\n\nYour service appointment is COMPLETED\n\nTotal Bill: Rs. ${Number(service.cost).toFixed(2)}\n\nDownload Your Invoice (PDF):\n${pdfUrl}\n\nThe invoice has also been sent to your email.${branding}`;
 
-        sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
+        await sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
 
         // Email — attach PDF buffer directly
         const htmlMsg = `<h1>Service Invoice</h1><p>Hello, ${fullService.User.name},</p><p>Your service for <b>${fullService.Vehicle?.Bike?.modelName || 'your vehicle'}</b> is now complete.</p><p>Total Amount Payable: <b>&#8377;${Number(service.cost).toFixed(2)}</b></p><p>Please find your invoice attached to this email. You can also download it here: <a href="${pdfUrl}">Invoice_#SRV-${fullService.id}.pdf</a></p><p>BAFNA E-BYKES</p>`;
 
-        sendEmail({
+        await sendEmail({
           to: fullService.User.email,
           subject: 'Service Invoice - BAFNA E-BYKES',
           text: msg,
@@ -202,12 +203,13 @@ const updateServiceStatus = async (req, res) => {
         include: [{ model: User, attributes: ['name', 'email', 'phone'] }]
       });
 
-      const branding = `\n\nGive your Feedback: https://bafna-frontend.onrender.com/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const branding = `\n\nGive your Feedback: ${frontendUrl}/feedback\n\nBAFNA E-BYKES\n24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\nContact: 7558533371 / 7709616271\nEmail: bafnaebykes@gmail.com`;
       const msg = `Hello, ${fullService.User.name}\n\nYour service appointment has been APPROVED\n\nDate: ${fullService.appointmentDate}\n\nPlease bring your vehicle to the showroom${branding}`;
 
-      sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
+      await sendWhatsApp(fullService.User.phone, msg).catch(err => console.error('[WhatsApp Error]', err.message));
       const htmlMsg = `<h1>Service Approved</h1><p>Hello, ${fullService.User.name},</p><p>Your service appointment has been APPROVED.</p><p>Date: ${fullService.appointmentDate}</p><p>Please bring your vehicle to the showroom.</p><p>BAFNA E-BYKES</p>`;
-      sendEmail({ to: fullService.User.email, subject: 'Service Appointment Approved', text: msg, html: htmlMsg });
+      await sendEmail({ to: fullService.User.email, subject: 'Service Appointment Approved', text: msg, html: htmlMsg });
     }
 
     res.json(service);
@@ -228,32 +230,16 @@ const triggerManualReminder = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // 3. Send Email (if configured)
-    const { sendWelcomeEmail, buildWhatsAppMessage } = require('../utils/notify');
-    const nodemailer = require('nodemailer');
-    if (process.env.EMAIL_USER && process.env.EMAIL_USER !== 'your_email@gmail.com') {
-      try {
-        const transporter = nodemailer.createTransport({
-          service: process.env.EMAIL_SERVICE || 'gmail',
-          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-        });
-        await transporter.sendMail({
-          from: `"BAFNA E-BYKES" <${process.env.EMAIL_USER}>`,
-          to: user.email,
-          subject: '⚡ Reminder from BAFNA E-BYKES',
-          html: `
-            <div style="background:#0a0a0a;padding:40px;font-family:sans-serif;color:#fff;max-width:600px;margin:0 auto">
-              <h2 style="color:#10b981;font-size:22px;margin:0 0 8px">⚡ BAFNA E-BYKES</h2>
-              <p style="color:#6b7280;margin:0 0 24px;font-size:13px">Message from the Showroom Team</p>
-              <div style="background:#111;border:1px solid #1f2937;border-radius:16px;padding:24px">
-                <p style="margin:0;font-size:15px;line-height:1.7;color:#e5e7eb">${message}</p>
-              </div>
-              <p style="margin-top:24px;font-size:11px;color:#374151;text-align:center">© 2026 BAFNA E-BYKES</p>
-            </div>`
-        });
-        console.log(`[Reminder] Email sent to ${user.email}`);
-      } catch (emailErr) {
-        console.error('[Reminder] Email failed:', emailErr.message);
-      }
+    // 3. Send Email
+    try {
+      await sendNotificationEmail({
+        to: user.email,
+        subject: '⚡ Reminder from BAFNA E-BYKES',
+        message: message
+      });
+      console.log(`[Reminder] Email sent to ${user.email}`);
+    } catch (emailErr) {
+      console.error('[Reminder] Email failed:', emailErr.message);
     }
 
     // 4. Build WhatsApp deep-link
@@ -433,13 +419,13 @@ const onboardCustomer = async (req, res) => {
       bike: bikeName
     } : null;
 
-    // 6. Send welcome email (non-blocking)
-    sendWelcomeEmail({
+    // 6. Send welcome email (blocking for reliability)
+    await sendWelcomeEmail({
       name, email,
       customerId: user.customerId,
       password, // plain text before hash — captured before ORM hook
       vehicle: vehiclePayload
-    }).catch(err => console.error('[Email]', err.message));
+    }).catch(err => console.error('[Email Error]', err.message));
 
     // 7. Build WhatsApp deep-link (returns URL admin can click to send message)
     const whatsappContact = whatsapp || phone;

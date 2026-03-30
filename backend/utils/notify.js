@@ -1,26 +1,71 @@
 const nodemailer = require('nodemailer');
 
 // ── Email Transporter ──────────────────────────────────────────────
-const getTransporter = () => nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
+/**
+ * Create a robust Gmail SMTP transporter.
+ * Using explicit host/port/secure settings is more reliable than service: 'gmail'.
+ */
+const getTransporter = () => {
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+
+  if (!user || !pass || user.includes('your_email')) {
+    console.warn('[MAIL SKIP] Email credentials not configured or incomplete.');
+    return null;
   }
-});
+
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // true for 465, false for 587
+    auth: {
+      user: user,
+      pass: pass
+    },
+    tls: {
+      rejectUnauthorized: false // Helps in cloud environments
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000
+  });
+};
+
+/**
+ * Generic email sending utility.
+ * Replaces functionality from the old mail.js.
+ */
+const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
+  const transporter = getTransporter();
+  if (!transporter) return false;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"BAFNA E-BYKES" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      text,
+      html,
+      attachments
+    });
+    console.log(`[MAIL SUCCESS] Sent to ${to}. MessageId: ${info.messageId}`);
+    return true;
+  } catch (error) {
+    console.error('[MAIL ERROR DETAILS]');
+    console.error('To:', to);
+    console.error('Subject:', subject);
+    console.error('Error:', error.message);
+    return false;
+  }
+};
 
 /**
  * Send welcome email to newly onboarded customer
  */
 const sendWelcomeEmail = async ({ name, email, customerId, password, vehicle }) => {
-  if (!process.env.EMAIL_USER || process.env.EMAIL_USER.includes('your_email')) {
-    console.log('[Email] Email not fully configured — skipping. Set EMAIL_USER and EMAIL_PASS in Render Environment.');
+  const transporter = getTransporter();
+  if (!transporter) {
+    console.log('[Email] Skip welcome email — credentials missing.');
     return;
   }
 
@@ -37,12 +82,10 @@ const sendWelcomeEmail = async ({ name, email, customerId, password, vehicle }) 
     <html>
     <body style="margin:0;padding:0;background:#0a0a0a;font-family:'Segoe UI',sans-serif;color:#fff">
       <div style="max-width:600px;margin:0 auto;padding:40px 20px">
-
         <div style="text-align:center;margin-bottom:40px">
           <h1 style="font-size:28px;font-weight:900;letter-spacing:-1px;color:#10b981;margin:0">⚡ BAFNA E-BYKES</h1>
           <p style="color:#6b7280;margin:8px 0 0">Welcome to the Future of Mobility</p>
         </div>
-
         <div style="background:#111;border:1px solid #1f2937;border-radius:24px;padding:40px">
           <h2 style="font-size:22px;font-weight:900;margin:0 0 8px">Welcome, ${name}</h2>
           <p style="color:#9ca3af;margin:0 0 32px">
@@ -50,25 +93,21 @@ const sendWelcomeEmail = async ({ name, email, customerId, password, vehicle }) 
             Here are your credentials and vehicle details.<br/>
             Please keep them safe!
           </p>
-
           <table style="width:100%;border-collapse:collapse;border-top:1px solid #1f2937">
             <tr><td style="padding:8px 0;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px">Customer ID</td><td style="padding:8px 0;font-size:20px;font-weight:900;color:#10b981;font-family:monospace">${customerId}</td></tr>
             <tr><td style="padding:8px 0;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px">Email</td><td style="padding:8px 0;font-weight:700">${email}</td></tr>
             <tr><td style="padding:8px 0;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px">Password</td><td style="padding:8px 0"><code style="background:#1f2937;padding:4px 12px;border-radius:8px;font-size:14px">${password}</code></td></tr>
             ${vehicleSection}
           </table>
-
           <div style="margin-top:32px;background:#0f1f1a;border:1px solid #10b981;border-radius:16px;padding:20px;text-align:center">
             <p style="margin:0;font-size:12px;color:#10b981;font-weight:700;text-transform:uppercase;letter-spacing:2px">Login at</p>
-            <p style="margin:8px 0 0;font-size:16px;font-weight:700">https://bafna-frontend.onrender.com/login</p>
+            <p style="margin:8px 0 0;font-size:16px;font-weight:700">${process.env.FRONTEND_URL || 'http://localhost:5173'}/login</p>
           </div>
-
           <p style="margin-top:24px;font-size:12px;color:#6b7280;text-align:center">
             Please change your password after first login.<br/>
             Contact the showroom if you have any questions.
           </p>
         </div>
-
         <p style="text-align:center;color:#374151;font-size:11px;margin-top:24px">
           © 2026 BAFNA E-BYKES. All rights reserved.
         </p>
@@ -78,22 +117,39 @@ const sendWelcomeEmail = async ({ name, email, customerId, password, vehicle }) 
   `;
 
   try {
-    await getTransporter().sendMail({
+    await transporter.sendMail({
       from: `"BAFNA E-BYKES" <${process.env.EMAIL_USER}>`,
-      to: email,
+      to,
       subject: `⚡ Welcome to BAFNA E-BYKES — Your Account is Ready!`,
       html
     });
     console.log(`[Email] Welcome email sent to ${email}`);
+    return true;
   } catch (err) {
-    console.error('[Email] Failed to send welcome email:', err.message);
+    console.error('[Email Failed] sendWelcomeEmail:', err.message);
+    return false;
   }
 };
 
 /**
- * Build a WhatsApp API URL (wa.me deep link) with a pre-filled message.
- * Returns the URL string — the backend can log it or store it.
- * For real sending, integrate Twilio WhatsApp API or Meta Cloud API.
+ * Send a generic notification email
+ */
+const sendNotificationEmail = async ({ to, subject, message, title = '⚡ BAFNA E-BYKES' }) => {
+  const html = `
+    <div style="background:#0a0a0a;padding:40px;font-family:sans-serif;color:#fff;max-width:600px;margin:0 auto">
+      <h2 style="color:#10b981;font-size:22px;margin:0 0 8px">${title}</h2>
+      <p style="color:#6b7280;margin:0 0 24px;font-size:13px">Official Update from the Showroom Team</p>
+      <div style="background:#111;border:1px solid #1f2937;border-radius:16px;padding:24px">
+        <p style="margin:0;font-size:15px;line-height:1.7;color:#e5e7eb">${message}</p>
+      </div>
+      <p style="margin-top:24px;font-size:11px;color:#374151;text-align:center">© 2026 BAFNA E-BYKES</p>
+    </div>`;
+
+  return sendEmail({ to, subject, text: message, html });
+};
+
+/**
+ * Build a WhatsApp API URL (wa.me deep link)
  */
 const buildWhatsAppMessage = ({ name, customerId, password, vehicle, phone }) => {
   let message = `Welcome to BAFNA E-BYKES, ${name}\n\n`;
@@ -111,8 +167,9 @@ const buildWhatsAppMessage = ({ name, customerId, password, vehicle, phone }) =>
     }
   }
 
-  message += `\nLogin: https://bafna-frontend.onrender.com/login\n\n`;
-  message += `Give your Feedback: https://bafna-frontend.onrender.com/feedback\n\n`;
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  message += `\nLogin: ${frontendUrl}/login\n\n`;
+  message += `Give your Feedback: ${frontendUrl}/feedback\n\n`;
   message += `BAFNA E-BYKES\n`;
   message += `24, Sai Baba Colony, Behind Agrasen Bhavan, Karwand Naka, Shirpur, Dist. Dhule, Maharashtra - 425405\n`;
   message += `Contact: 7558533371 / 7709616271\n`;
@@ -125,4 +182,9 @@ const buildWhatsAppMessage = ({ name, customerId, password, vehicle, phone }) =>
   return { message, waUrl };
 };
 
-module.exports = { sendWelcomeEmail, buildWhatsAppMessage };
+module.exports = {
+  sendEmail,
+  sendWelcomeEmail,
+  sendNotificationEmail,
+  buildWhatsAppMessage
+};

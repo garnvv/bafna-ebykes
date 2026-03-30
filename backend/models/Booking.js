@@ -11,11 +11,23 @@ const Booking = sequelize.define('Booking', {
   },
   userId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true, // Allow for guest bookings
     references: {
       model: User,
       key: 'id'
     }
+  },
+  guestName: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  guestEmail: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  guestPhone: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
   bikeId: {
     type: DataTypes.INTEGER,

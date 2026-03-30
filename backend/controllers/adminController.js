@@ -9,50 +9,50 @@ const { generateAndSaveInvoice } = require('../utils/pdfGenerator');
 // @access  Private/Admin
 const getAnalytics = async (req, res) => {
   try {
-    // Fetching data with fallbacks to avoid entire analytics failing on a single error
-    const totalUsers = await User.count({ where: { role: 'user' } }).catch(() => 0);
-    const totalBookings = await Booking.count().catch(() => 0);
-    const totalServices = await Service.count().catch(() => 0);
-    const totalBikes = await Bike.count().catch(() => 0);
+    // Execute all base statistics and recent lists simultaneously to prevent cascading latency
+    const [
+      totalUsers,
+      totalBookings,
+      totalServices,
+      totalBikes,
+      recentBookings,
+      recentFeedback
+    ] = await Promise.all([
+      User.count({ where: { role: 'user' } }).catch(() => 0),
+      Booking.count().catch(() => 0),
+      Service.count().catch(() => 0),
+      Bike.count().catch(() => 0),
+      Booking.findAll({
+        limit: 5, order: [['createdAt', 'DESC']],
+        include: [{ model: User, attributes: ['name'] }, { model: Bike, attributes: ['modelName'] }]
+      }).catch(() => []),
+      Feedback.findAll({
+        limit: 5, order: [['createdAt', 'DESC']],
+        include: [{ model: User, attributes: ['name'] }]
+      }).catch(() => [])
+    ]);
 
-    const recentBookings = await Booking.findAll({
-      limit: 5,
-      order: [['createdAt', 'DESC']],
-      include: [
-        { model: User, attributes: ['name'] },
-        { model: Bike, attributes: ['modelName'] }
-      ]
-    }).catch(() => []);
-
-    const recentFeedback = await Feedback.findAll({
-      limit: 5,
-      order: [['createdAt', 'DESC']],
-      include: [{ model: User, attributes: ['name'] }]
-    }).catch(() => []);
-
-    // Monthly data for charts (Last 6 months)
-    const monthlyBookings = [];
+    // Monthly data for charts (Last 6 months) — Fetch concurrently
+    const startOfMonths = [];
     for (let i = 5; i >= 0; i--) {
-      const startOfMonth = new Date();
-      startOfMonth.setMonth(startOfMonth.getMonth() - i);
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      date.setDate(1);
+      date.setHours(0, 0, 0, 0);
+      startOfMonths.push(date);
+    }
 
+    const monthlyBookingsReqs = startOfMonths.map(startOfMonth => {
       const endOfMonth = new Date(startOfMonth);
       endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+      return Booking.count({
+        where: { createdAt: { [Op.gte]: startOfMonth, [Op.lt]: endOfMonth } }
+      })
+      .then(count => ({ month: startOfMonth.toLocaleString('default', { month: 'short' }), count }))
+      .catch(() => ({ month: startOfMonth.toLocaleString('default', { month: 'short' }), count: 0 }));
+    });
 
-      const count = await Booking.count({
-        where: {
-          createdAt: {
-            [Op.gte]: startOfMonth,
-            [Op.lt]: endOfMonth
-          }
-        }
-      }).catch(() => 0);
-
-      const monthName = startOfMonth.toLocaleString('default', { month: 'short' });
-      monthlyBookings.push({ month: monthName, count });
-    }
+    const monthlyBookings = await Promise.all(monthlyBookingsReqs);
 
     res.json({
       summary: {

@@ -52,108 +52,19 @@ const getTransporterAsync = async (portToTry = 465) => {
  * Replaces functionality from the old mail.js.
  */
 const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
-  let transporter = await getTransporterAsync(465); // Try 465 first
-  if (!transporter) throw new Error("Render Environment Variables for EMAIL_USER or EMAIL_PASS are missing or invalid!");
-
-  try {
-    const info = await transporter.sendMail({
-      from: `"BAFNA E-BYKES" <${process.env.EMAIL_USER}>`,
-      to, subject, text, html, attachments
-    });
-    console.log(`[MAIL SUCCESS] Sent to ${to}. MessageId: ${info.messageId}`);
-    return true;
-  } catch (error) {
-    console.warn(`[MAIL WARNING] Port 465 failed: ${error.message}. Trying Port 587 Fallback...`);
-    
-    // Try Fallback on Port 587
-    const fallbackTransporter = await getTransporterAsync(587);
-    if (!fallbackTransporter) throw new Error("Render Environment Variables for EMAIL_USER or EMAIL_PASS are missing or invalid!");
-
-    try {
-      const info = await fallbackTransporter.sendMail({
-        from: `"BAFNA E-BYKES" <${process.env.EMAIL_USER}>`,
-        to, subject, text, html, attachments
-      });
-      console.log(`[MAIL SUCCESS] Fallback (Port 587) delivered to ${to}. MessageId: ${info.messageId}`);
-      return true;
-    } catch (fError) {
-      console.error('[MAIL ERROR] Both ports (465 & 587) failed.');
-      console.error('Final Error:', fError.message);
-      throw new Error(`SMTP Failure: ${fError.message}`); // Throw exact error so frontend can see what blocked it
-    }
-  }
+  // [Email Disabled by Admin Request]
+  // We instantly return true to simulate success. This immediately skips the 4-second SMTP wait,
+  // drastically speeding up all App operations (Accepting test rides, servicing, and registration).
+  console.log(`[MAIL DISABLED] Simulated delivery to ${to}. Subject: ${subject}`);
+  return true;
 };
 
 /**
  * Send welcome email to newly onboarded customer
  */
 const sendWelcomeEmail = async ({ name, email, customerId, password, vehicle }) => {
-  const transporter = await getTransporterAsync();
-  if (!transporter) {
-    console.log('[Email] Skip welcome email — credentials missing.');
-    return;
-  }
-
-  const vehicleSection = vehicle
-    ? `
-      <tr><td style="padding:8px 0;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px">Vehicle</td><td style="padding:8px 0;font-weight:700">${vehicle.bike}</td></tr>
-      <tr><td style="padding:8px 0;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px">Vehicle Reg ID</td><td style="padding:8px 0;font-size:20px;font-weight:900;color:#10b981;font-family:monospace">${vehicle.vehicleRegId}</td></tr>
-      <tr><td style="padding:8px 0;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px">VIN / Chassis</td><td style="padding:8px 0;font-family:monospace">${vehicle.vin}</td></tr>
-      ${vehicle.nextServiceDate ? `<tr><td style="padding:8px 0;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px">Next Service Due</td><td style="padding:8px 0;font-weight:700;color:#f97316">${vehicle.nextServiceDate}</td></tr>` : ''}
-    ` : '';
-
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <body style="margin:0;padding:0;background:#0a0a0a;font-family:'Segoe UI',sans-serif;color:#fff">
-      <div style="max-width:600px;margin:0 auto;padding:40px 20px">
-        <div style="text-align:center;margin-bottom:40px">
-          <h1 style="font-size:28px;font-weight:900;letter-spacing:-1px;color:#10b981;margin:0">⚡ BAFNA E-BYKES</h1>
-          <p style="color:#6b7280;margin:8px 0 0">Welcome to the Future of Mobility</p>
-        </div>
-        <div style="background:#111;border:1px solid #1f2937;border-radius:24px;padding:40px">
-          <h2 style="font-size:22px;font-weight:900;margin:0 0 8px">Welcome, ${name}</h2>
-          <p style="color:#9ca3af;margin:0 0 32px">
-            Your BAFNA E-BYKES account has been created by our showroom team.<br/>
-            Here are your credentials and vehicle details.<br/>
-            Please keep them safe!
-          </p>
-          <table style="width:100%;border-collapse:collapse;border-top:1px solid #1f2937">
-            <tr><td style="padding:8px 0;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px">Customer ID</td><td style="padding:8px 0;font-size:20px;font-weight:900;color:#10b981;font-family:monospace">${customerId}</td></tr>
-            <tr><td style="padding:8px 0;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px">Email</td><td style="padding:8px 0;font-weight:700">${email}</td></tr>
-            <tr><td style="padding:8px 0;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px">Password</td><td style="padding:8px 0"><code style="background:#1f2937;padding:4px 12px;border-radius:8px;font-size:14px">${password}</code></td></tr>
-            ${vehicleSection}
-          </table>
-          <div style="margin-top:32px;background:#0f1f1a;border:1px solid #10b981;border-radius:16px;padding:20px;text-align:center">
-            <p style="margin:0;font-size:12px;color:#10b981;font-weight:700;text-transform:uppercase;letter-spacing:2px">Login at</p>
-            <p style="margin:8px 0 0;font-size:16px;font-weight:700">${process.env.FRONTEND_URL || 'https://bafna-frontend.onrender.com'}/login</p>
-          </div>
-          <p style="margin-top:24px;font-size:12px;color:#6b7280;text-align:center">
-            Please change your password after first login.<br/>
-            Contact the showroom if you have any questions.
-          </p>
-        </div>
-        <p style="text-align:center;color:#374151;font-size:11px;margin-top:24px">
-          © 2026 BAFNA E-BYKES. All rights reserved.
-        </p>
-      </div>
-    </body>
-    </html>
-  `;
-
-  try {
-    await transporter.sendMail({
-      from: `"BAFNA E-BYKES" <${process.env.EMAIL_USER}>`,
-      to,
-      subject: `⚡ Welcome to BAFNA E-BYKES — Your Account is Ready!`,
-      html
-    });
-    console.log(`[Email] Welcome email sent to ${email}`);
-    return true;
-  } catch (err) {
-    console.error('[Email Failed] sendWelcomeEmail:', err.message);
-    return false;
-  }
+  console.log(`[MAIL DISABLED] Simulated Welcome Email to ${email}`);
+  return true;
 };
 
 /**

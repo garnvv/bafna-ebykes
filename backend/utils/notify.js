@@ -4,12 +4,15 @@ const dns = require('dns');
 // CRITICAL FIX: Render + Node 18+ defaults to IPv6, which Google SMTP aggressively blocks or hangs on. This forces IPv4.
 dns.setDefaultResultOrder('ipv4first');
 
+const { promisify } = require('util');
+const lookupAsync = promisify(dns.lookup);
+
 // ── Email Transporter ──────────────────────────────────────────────
 /**
- * Create a robust Gmail SMTP transporter.
- * Using explicit host/port/secure settings is more reliable than service: 'gmail'.
+ * Create a robust Gmail SMTP transporter using an explicit, guaranteed IPv4 resolution.
+ * This completely bypasses Render's broken IPv6 network routes (ENETUNREACH).
  */
-const getTransporter = (portToTry = 465) => {
+const getTransporterAsync = async (portToTry = 465) => {
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASS;
 
@@ -18,20 +21,30 @@ const getTransporter = (portToTry = 465) => {
     return null;
   }
 
-  const isSecure = portToTry === 465;
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    family: 4, // Explicitly force IPv4 network resolving for GMail SMTP timeout bugs
-    port: portToTry,
-    secure: isSecure,
-    auth: { user, pass },
-    debug: true,
-    logger: true,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    tls: isSecure ? undefined : { rejectUnauthorized: false }
-  });
+  try {
+    // 1. Force the OS to resolve solely an IPv4 address for Google's SMTP!
+    const { address } = await lookupAsync('smtp.gmail.com', { family: 4 });
+    const isSecure = portToTry === 465;
+    
+    // 2. Build the transporter using the raw IPv4 string, keeping 'servername' intact for TLS signatures.
+    return nodemailer.createTransport({
+      host: address, // Looks like: '142.251.167.108'
+      port: portToTry,
+      secure: isSecure,
+      auth: { user, pass },
+      debug: false,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
+      tls: {
+        servername: 'smtp.gmail.com', // Crucial: Re-identifies to Google since providing an IP breaks naive SSL
+        rejectUnauthorized: !isSecure
+      }
+    });
+  } catch (dnsErr) {
+    console.error('[MAIL ERROR] Extremely fatal DNS failure:', dnsErr.message);
+    return null;
+  }
 };
 
 /**
@@ -39,7 +52,7 @@ const getTransporter = (portToTry = 465) => {
  * Replaces functionality from the old mail.js.
  */
 const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
-  let transporter = getTransporter(465); // Try 465 first
+  let transporter = await getTransporterAsync(465); // Try 465 first
   if (!transporter) throw new Error("Render Environment Variables for EMAIL_USER or EMAIL_PASS are missing or invalid!");
 
   try {
@@ -53,7 +66,7 @@ const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
     console.warn(`[MAIL WARNING] Port 465 failed: ${error.message}. Trying Port 587 Fallback...`);
     
     // Try Fallback on Port 587
-    const fallbackTransporter = getTransporter(587);
+    const fallbackTransporter = await getTransporterAsync(587);
     if (!fallbackTransporter) throw new Error("Render Environment Variables for EMAIL_USER or EMAIL_PASS are missing or invalid!");
 
     try {
@@ -75,7 +88,7 @@ const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
  * Send welcome email to newly onboarded customer
  */
 const sendWelcomeEmail = async ({ name, email, customerId, password, vehicle }) => {
-  const transporter = getTransporter();
+  const transporter = await getTransporterAsync();
   if (!transporter) {
     console.log('[Email] Skip welcome email — credentials missing.');
     return;

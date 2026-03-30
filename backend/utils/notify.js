@@ -40,7 +40,7 @@ const getTransporter = (portToTry = 465) => {
  */
 const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
   let transporter = getTransporter(465); // Try 465 first
-  if (!transporter) return false;
+  if (!transporter) throw new Error("Render Environment Variables for EMAIL_USER or EMAIL_PASS are missing or invalid!");
 
   try {
     const info = await transporter.sendMail({
@@ -54,7 +54,7 @@ const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
     
     // Try Fallback on Port 587
     const fallbackTransporter = getTransporter(587);
-    if (!fallbackTransporter) return false;
+    if (!fallbackTransporter) throw new Error("Render Environment Variables for EMAIL_USER or EMAIL_PASS are missing or invalid!");
 
     try {
       const info = await fallbackTransporter.sendMail({
@@ -66,7 +66,7 @@ const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
     } catch (fError) {
       console.error('[MAIL ERROR] Both ports (465 & 587) failed.');
       console.error('Final Error:', fError.message);
-      return false;
+      throw new Error(`SMTP Failure: ${fError.message}`); // Throw exact error so frontend can see what blocked it
     }
   }
 };

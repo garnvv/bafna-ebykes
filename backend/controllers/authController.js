@@ -108,16 +108,13 @@ const forgotPassword = async (req, res) => {
     
     // Send email in background - DO NOT AWAIT - to keep UI responsive
     const emailSent = await sendEmail({ to: email, subject: 'Your Password Reset OTP', text, html });
-    
-    if (!emailSent) {
-      // If email couldn't be sent, remove the OTP from the store so they can try again
-      otpStore.delete(email.toLowerCase());
-      return res.status(500).json({ message: 'Failed to send OTP email. Please check server email credentials.' });
-    }
-
-    // Return success only if email actually sent
     return res.status(200).json({ message: 'OTP sent to your email address' });
   } catch (error) {
+    // If it's a known SMTP/Email credential error, clean up the OTP store
+    if (error.message.includes('SMTP Failure') || error.message.includes('Render Environment Variables')) {
+      otpStore.delete(req.body.email?.toLowerCase());
+    }
+    
     console.error('[Forgot Password Error]', error.message);
     res.status(500).json({ message: error.message });
   }

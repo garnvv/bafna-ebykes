@@ -21,21 +21,31 @@ const stockRoutes = require('./routes/stockRoutes');
 
 const app = express();
 
+// Track DB readiness
+let dbReady = false;
+
 // Middleware
 app.use(express.json());
+app.use(morgan('combined'));
 
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true,
+// CORS — allow all origins so frontend on Render/Vercel can reach backend
+app.use(cors({
+  origin: '*',
+  credentials: false,
   optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
+}));
 app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-}
+
+// ── Health Check (MUST come before all routes) ──────────────────
+// Render needs this to confirm the service is alive.
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', db: dbReady ? 'connected' : 'connecting' });
+});
+app.get('/', (req, res) => {
+  res.json({ message: 'Bafana E-Bikes API is running', version: '2.0.0' });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -60,61 +70,73 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
-const startServer = async () => {
+const applyDbPatches = async () => {
   try {
-    await sequelize.authenticate();
-    console.log('Database connected successfully.');
-    
-    // Sync models - using standard sync to prevent 'Too many keys' crashes
-    await sequelize.sync();
-    
-    // Rigorous explicit patch for 'userId' NULL to fix guest booking failures
-    try {
-      // 1. Find the Foreign Key constraint name dynamically
-      const [fkResults] = await sequelize.query(`
-        SELECT CONSTRAINT_NAME 
-        FROM information_schema.KEY_COLUMN_USAGE 
-        WHERE TABLE_SCHEMA = DATABASE() 
-          AND TABLE_NAME = 'Bookings' 
-          AND COLUMN_NAME = 'userId' 
-          AND REFERENCED_TABLE_NAME IS NOT NULL;
-      `);
-      
-      // 2. Drop the existing Foreign Key if it exists
-      if (fkResults && fkResults.length > 0) {
-        for (const row of fkResults) {
-           await sequelize.query(`ALTER TABLE Bookings DROP FOREIGN KEY \`${row.CONSTRAINT_NAME}\``);
-        }
-      }
-      
-      // 3. Modify the column to safely accept NULL values
-      await sequelize.query("ALTER TABLE Bookings MODIFY `userId` int NULL");
-      
-      // 4. Re-add the constrained Foreign Key relationship
-      await sequelize.query(`
-        ALTER TABLE Bookings 
-        ADD CONSTRAINT fk_bookings_userId_patch 
-        FOREIGN KEY (userId) REFERENCES Users(id) ON DELETE SET NULL ON UPDATE CASCADE
-      `);
-      
-      console.log('[DB] ✅ Explicit Patch Applied: Bookings.userId is now formally NULLABLE');
-    } catch (err) {
-      if (err.message.includes('Duplicate check constraint') || err.message.includes('already exists')) {
-        console.log('[DB] Patch ignored: userId is already patched correctly.');
-      } else {
-        console.warn('[DB] Patch Skipped/Failed (Could be harmless if already Nullable). Error:', err.message);
+    const [fkResults] = await sequelize.query(`
+      SELECT CONSTRAINT_NAME 
+      FROM information_schema.KEY_COLUMN_USAGE 
+      WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'Bookings' 
+        AND COLUMN_NAME = 'userId' 
+        AND REFERENCED_TABLE_NAME IS NOT NULL;
+    `);
+    if (fkResults && fkResults.length > 0) {
+      for (const row of fkResults) {
+        await sequelize.query(`ALTER TABLE Bookings DROP FOREIGN KEY \`${row.CONSTRAINT_NAME}\``);
       }
     }
-    
-    console.log('[DB] Database models fully initialized');
+    await sequelize.query("ALTER TABLE Bookings MODIFY `userId` int NULL");
+    await sequelize.query(`
+      ALTER TABLE Bookings 
+      ADD CONSTRAINT fk_bookings_userId_patch 
+      FOREIGN KEY (userId) REFERENCES Users(id) ON DELETE SET NULL ON UPDATE CASCADE
+    `);
+    console.log('[DB] ✅ Patch: Bookings.userId is NULLABLE');
+  } catch (err) {
+    if (err.message.includes('Duplicate') || err.message.includes('already exists')) {
+      console.log('[DB] Patch already applied.');
+    } else {
+      console.warn('[DB] Patch skipped:', err.message);
+    }
+  }
+};
 
-    app.listen(PORT, () => {
-      console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Unable to connect to the database:', error);
+const startServer = async () => {
+  // START HTTP SERVER FIRST — so Render health checks pass immediately
+  app.listen(PORT, () => {
+    console.log(`🚀 Server listening on port ${PORT} — connecting to database...`);
+  });
+
+  // Then connect to DB with retry
+  let attempts = 0;
+  const MAX_ATTEMPTS = 10;
+  while (attempts < MAX_ATTEMPTS) {
+    try {
+      attempts++;
+      console.log(`[DB] Connection attempt ${attempts}/${MAX_ATTEMPTS}...`);
+      await sequelize.authenticate();
+      console.log('[DB] ✅ Database connected successfully.');
+
+      await sequelize.sync({ alter: false });
+      console.log('[DB] ✅ Models synced.');
+
+      await applyDbPatches();
+
+      dbReady = true;
+      console.log('[DB] ✅ Database fully initialized. System is ready!');
+      break;
+    } catch (error) {
+      console.error(`[DB] ❌ Connection attempt ${attempts} failed:`, error.message);
+      if (attempts >= MAX_ATTEMPTS) {
+        console.error('[DB] 💀 Max retries exceeded. Server running but DB unavailable.');
+      } else {
+        const delay = Math.min(1000 * Math.pow(2, attempts), 30000);
+        console.log(`[DB] Retrying in ${delay / 1000}s...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
   }
 };
 

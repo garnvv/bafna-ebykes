@@ -3,19 +3,22 @@ services:
   - type: web
     name: bafna-backend
     runtime: node
-    plan: free # Change to 'starter' if you need persistent storage
-    region: singapore # Choose the region closest to your customers
+    plan: free
+    region: singapore
     rootDir: backend
     buildCommand: npm install
     startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5001
+        value: 10000
       - key: JWT_SECRET
-        generateValue: true # Generates a secure random key automatically
+        generateValue: true
       - key: DB_HOST
+        sync: false
+      - key: DB_PORT
         sync: false
       - key: DB_USER
         sync: false
@@ -30,14 +33,7 @@ services:
       - key: EMAIL_PASS
         sync: false
       - key: FRONTEND_URL
-        fromStaticSite:
-          name: bafna-frontend
-          property: url
-      - key: API_BASE_URL
-        fromService:
-          type: web
-          name: bafna-backend
-          property: host
+        value: "https://bafna-frontend.onrender.com"
 
   # 2. Frontend Static Site (React/Vite)
   - type: static
@@ -52,3 +48,4 @@ services:
           type: web
           name: bafna-backend
           property: host
+

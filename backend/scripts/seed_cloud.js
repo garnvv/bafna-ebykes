@@ -20,7 +20,6 @@ const TARGET = {
 Object.entries(TARGET).forEach(([k, v]) => { process.env[k] = v; });
 
 const { sequelize, User, Bike } = require('../models');
-const bcrypt = require('bcryptjs');
 
 async function seed() {
   try {
@@ -33,24 +32,23 @@ async function seed() {
     console.log('✅ All tables created fresh.');
 
     // ── ADMIN USER ────────────────────────────────────────────────────────────
-    const adminPwd = await bcrypt.hash('admin123', 10);
+    // NOTE: Do NOT pre-hash passwords. The User model's beforeCreate hook handles hashing.
     await User.create({
       customerId:  'BAF-ADMIN-001',
       name:        'Bafana Admin',
       email:       'admin@bafana.com',
-      password:    adminPwd,
+      password:    'admin123',
       role:        'admin',
       phone:       '7558533371'
     });
     console.log('✅ Admin created → admin@bafana.com / admin123');
 
     // ── SAMPLE USER ───────────────────────────────────────────────────────────
-    const userPwd = await bcrypt.hash('password123', 10);
     await User.create({
       customerId:  'BAF-USER-001',
       name:        'John Doe',
       email:       'john@example.com',
-      password:    userPwd,
+      password:    'password123',
       role:        'user',
       phone:       '9876543210'
     });
